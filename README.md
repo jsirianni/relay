@@ -1,2 +1,5 @@
-# relay
-Relay is an event forwarding service, useful for taking in messages and shipping them to a defined destination, such as SendGrid
+# Relay
+
+Relay is an event forwarding service. The Frontend takes in an HTTP POST request
+and sends it to Google PubSub. The Forwarding service ships the message to a
+pre configured destination.
