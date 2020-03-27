@@ -3,6 +3,7 @@ package alert
 import (
 	"github.com/pkg/errors"
 
+	"github.com/jsirianni/relay/util/logger"
 	"github.com/jsirianni/relay/common/alert/slack"
 )
 
@@ -12,7 +13,7 @@ type Alert interface {
 	Message(message string) error
 }
 
-func NewSlack(hookURL, channel string) (Alert, error) {
+func NewSlack(hookURL, channel string, l logger.Logger) (Alert, error) {
 	if hookURL == "" {
 		return nil, errors.New("slack hook url is not set")
 	}
@@ -21,6 +22,5 @@ func NewSlack(hookURL, channel string) (Alert, error) {
 		return nil, errors.New("slack channel is not set")
 	}
 
-	var a Alert = slack.Slack{hookURL,channel}
-	return a, nil
+	return slack.Slack{hookURL,channel,l}, nil
 }

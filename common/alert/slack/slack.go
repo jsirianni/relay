@@ -2,12 +2,13 @@ package slack
 
 import (
 	"os"
-	"fmt"
 	"bytes"
 	"io/ioutil"
 	"encoding/json"
 	"net/http"
 	"strconv"
+
+	"github.com/jsirianni/relay/util/logger"
 
 	"github.com/pkg/errors"
 )
@@ -18,6 +19,7 @@ var slackDebug = false
 type Slack struct {
 	HookURL string
 	Channel string
+	Log     logger.Logger
 }
 
 type payload struct {
@@ -29,9 +31,6 @@ func (slack Slack) Message(message string) error {
 	// set debug, ignore parse errors
 	x := os.Getenv(envSlackDebug)
 	slackDebug, _ = strconv.ParseBool(x)
- 	if slackDebug {
-		fmt.Println("slack debug enabled")
-	}
 
 	if err := slack.validateArgs(message); err != nil {
 		return errors.Wrap(err, "slack configuration failed validation")
@@ -47,7 +46,7 @@ func (slack Slack) sendPayload(m string) error {
 	}
 
 	if slackDebug {
-		fmt.Println("slack payload: " + string(p))
+		slack.Log.Trace("slack payload: " + string(p))
 	}
 
 	req, err := http.NewRequest("POST", slack.HookURL, bytes.NewBuffer(p))
@@ -56,20 +55,24 @@ func (slack Slack) sendPayload(m string) error {
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
+	client := &http.Client{
+    	CheckRedirect: func(req *http.Request, via []*http.Request) error {
+        	return http.ErrUseLastResponse
+    	},
+	}
 	resp, err := client.Do(req)
 	defer resp.Body.Close()
 	if err != nil {
 		return err
 	}
 
-
 	if resp.StatusCode != 200 {
 		b, _ := ioutil.ReadAll(resp.Body)
 		if b == nil {
+			slack.Log.Trace("slack response body is empty")
 			b = []byte("")
 		}
-		return errors.New("Slack returned status: " + strconv.Itoa(resp.StatusCode) + " " + string(b))
+		return errors.New("slack returned status: " + strconv.Itoa(resp.StatusCode) + " " + string(b))
 	}
 	return nil
 }
