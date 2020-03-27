@@ -62,7 +62,6 @@ func parseAddress(req *http.Request) (string, error) {
 func parseAPIKey(req *http.Request) (string, error) {
     apiKey := req.Header.Get(apiKeyHeader)
     if apiKey == "" {
-        p.Log.Trace(missingAPIKeyHeader)
         return "", errors.New(missingAPIKeyHeader)
     }
     return apiKey, nil
