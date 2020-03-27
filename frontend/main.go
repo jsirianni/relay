@@ -7,6 +7,7 @@ import (
     "net/http"
 
     "github.com/jsirianni/relay/common"
+    "github.com/jsirianni/relay/util/logger"
 
     "cloud.google.com/go/pubsub"
     "github.com/gorilla/mux"
@@ -59,11 +60,19 @@ func server() error {
     r := mux.NewRouter()
     r.HandleFunc("/message", handleMessage).Methods("POST")
     r.HandleFunc("/status", status).Methods("GET")
-    p.Log.Trace("starting frontend relay server on port " + port)
+    p.Log.Info("starting frontend relay server on port " + port)
     return http.ListenAndServe(":" + port, r)
 }
 
 func status(resp http.ResponseWriter, req *http.Request) {
+    if p.Log.Level() == logger.TraceLVL {
+        addr, err := parseAddress(req)
+        if err != nil {
+            p.Log.Error(err)
+        } else {
+            p.Log.Trace("healthcheck from " + addr)
+        }
+    }
     resp.WriteHeader(http.StatusOK)
 }
 
