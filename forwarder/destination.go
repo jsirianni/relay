@@ -24,7 +24,7 @@ func initDest() (alert.Alert, error) {
     if destType == typeSlack {
         hookURL := os.Getenv(envSlackHookURL)
         channel := os.Getenv(envSlackChannel)
-        return alert.NewSlack(hookURL, channel)
+        return alert.NewSlack(hookURL, channel, p.Log)
     }
 
     return nil, errors.New(destType + " is not supported")

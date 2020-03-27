@@ -36,7 +36,7 @@ func main() {
         p.Log.Error(err)
         os.Exit(1)
     }
-
+    p.Log.Trace("destination configured")
     subscribe()
 }
 
@@ -73,5 +73,6 @@ func process(mRaw []byte) error {
     if err := destination.Message(m.Text); err != nil {
         return err
     }
+    p.Log.Trace("message sent without error")
     return nil
 }
