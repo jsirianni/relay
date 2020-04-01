@@ -1,6 +1,6 @@
 FROM golang:1.14-alpine3.11 as build
 COPY stage/ /stage
-WORKDIR /stage/forwarder
+WORKDIR /stage/cmd/forwarder
 RUN apk add git
 RUN go build
 
@@ -8,5 +8,5 @@ RUN go build
 # k8s to run "sleep" commands for lifecycle pre stop hooks
 FROM alpine:3.11
 WORKDIR /relay
-COPY --from=build /stage/forwarder/forwarder /relay/forwarder
+COPY --from=build /stage/cmd/forwarder/forwarder /relay/forwarder
 ENTRYPOINT [/relay/forwarder]

@@ -15,10 +15,10 @@ build-forwarder: clean-forwarder
 quick-all: quick-frontend quick-forwarder
 
 quick-frontend:
-	cd frontend/ &&	go build
+	cd cmd/frontend/ &&	go build
 
 quick-forwarder:
-	cd forwarder/ && go build
+	cd cmd/forwarder/ && go build
 
 test-all:
 	go test ./...
