@@ -61,10 +61,10 @@ func (slack Slack) sendPayload(m string) error {
     	},
 	}
 	resp, err := client.Do(req)
-	defer resp.Body.Close()
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
 		b, _ := ioutil.ReadAll(resp.Body)

@@ -5,6 +5,7 @@ import (
 
 	"github.com/jsirianni/relay/util/logger"
 	"github.com/jsirianni/relay/common/alert/slack"
+	"github.com/jsirianni/relay/common/alert/terminal"
 )
 
 type Alert interface {
@@ -23,4 +24,8 @@ func NewSlack(hookURL, channel string, l logger.Logger) (Alert, error) {
 	}
 
 	return slack.Slack{hookURL,channel,l}, nil
+}
+
+func NewTerminal() (Alert, error) {
+	return terminal.Terminal{}, nil
 }
