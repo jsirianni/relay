@@ -29,7 +29,7 @@ func initDest() (alert.Alert, error) {
     }
 
     if destType == typeTerm {
-        return alert.NewTerminal()
+        return alert.NewTerminal(p.Log)
     }
 
     return nil, errors.New(destType + " is not supported")

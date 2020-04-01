@@ -12,6 +12,12 @@ type Alert interface {
 	// Message takes a message as a string and sends it
 	// to the configured destination
 	Message(message string) error
+
+	// The alert type (Slack, Terminal, etc)
+	Type() string
+
+	// Config returns a json []byte value
+	Config() ([]byte, error)
 }
 
 func NewSlack(hookURL, channel string, l logger.Logger) (Alert, error) {
@@ -26,6 +32,6 @@ func NewSlack(hookURL, channel string, l logger.Logger) (Alert, error) {
 	return slack.Slack{hookURL,channel,l}, nil
 }
 
-func NewTerminal() (Alert, error) {
-	return terminal.Terminal{}, nil
+func NewTerminal(l logger.Logger) (Alert, error) {
+	return terminal.Terminal{l}, nil
 }

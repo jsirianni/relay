@@ -36,7 +36,13 @@ func main() {
         p.Log.Error(err)
         os.Exit(1)
     }
-    p.Log.Trace("destination configured")
+    confBytes, err := destination.Config()
+    if err != nil {
+        p.Log.Trace(err)
+    } else {
+            p.Log.Trace("destination configured with config: " + string(confBytes))
+    }
+
     subscribe()
 }
 
@@ -73,6 +79,6 @@ func process(mRaw []byte) error {
     if err := destination.Message(m.Text); err != nil {
         return err
     }
-    p.Log.Trace("message sent without error")
+    p.Log.Trace("message sent to destination '" + destination.Type() + "'")
     return nil
 }

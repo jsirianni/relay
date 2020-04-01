@@ -76,3 +76,11 @@ func (slack Slack) sendPayload(m string) error {
 	}
 	return nil
 }
+
+func (slack Slack) Type() string {
+	return "slack"
+}
+
+func (slack Slack) Config() ([]byte, error) {
+    return json.Marshal(slack)
+}
