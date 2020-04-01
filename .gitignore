@@ -3,3 +3,5 @@ docker/frontend/stage
 docker/forwarder/stage
 forwarder/forwarder
 frontend/frontend
+cmd/forwarder/forwarder
+cmd/frontend/frontend
