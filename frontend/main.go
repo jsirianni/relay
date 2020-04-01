@@ -8,24 +8,38 @@ import (
 
     "github.com/jsirianni/relay/common"
     "github.com/jsirianni/relay/util/logger"
+    "github.com/jsirianni/relay/auth"
+    "github.com/jsirianni/relay/auth/gcpdatastore"
+    "github.com/jsirianni/relay/common/env"
 
     "cloud.google.com/go/pubsub"
     "github.com/gorilla/mux"
 )
 
+type Frontend struct {
+    ProjectID string
+    PubSub    common.PubSubConf
+    Auth      auth.Auth
+    Log       logger.Logger
+}
+
 type IncomingRequest struct {
     Text string `json:"text"`
 }
 
-var p common.PubSubConf
-var port string
-var topic string
+var front Frontend
 
-const apiKeyHeader   = "x-relay-api-key"
-const invalidIPError = "ip address is not valid, failed to parse"
-const missingAPIKeyHeader = "request did not include api key header"
-const errTopicExists = "Resource already exists in the project"
+var (
+    port string
+    topic string
+)
 
+const (
+    apiKeyHeader   = "x-relay-api-key"
+    invalidIPError = "ip address is not valid, failed to parse"
+    missingAPIKeyHeader = "request did not include api key header"
+    errTopicExists = "Resource already exists in the project"
+)
 
 func init() {
     flag.StringVar(&port, "port", "8080", "server http port")
@@ -33,26 +47,54 @@ func init() {
     flag.Parse()
 }
 
-func main() {
+func (f *Frontend) Init() error {
     var err error
-    p, err = common.Init()
+
+    f.ProjectID, err = env.ENVProjectID()
     if err != nil {
+        return err
+    }
+
+    logLevel, err := env.ENVLogLevel()
+    if err != nil {
+        return err
+    }
+
+    if err := front.Log.Configure(logLevel); err != nil {
+        return err
+    }
+
+    f.Auth, err = gcpdatastore.New(f.ProjectID)
+    if err != nil {
+        return err
+    }
+
+    f.PubSub, err = common.Init()
+    if err != nil {
+        return err
+    }
+
+    return err
+}
+
+func main() {
+    if err := front.Init(); err != nil {
         fmt.Fprint(os.Stderr, err.Error())
         os.Exit(1)
     }
 
     if topic == "" {
-        p.Log.Error("topic must be set")
+        front.Log.Error("topic must be set")
         os.Exit(1)
     }
 
-    p.Topic = p.Client.Topic(topic)
+    front.PubSub.Topic = front.PubSub.Client.Topic(topic)
     if err := server(); err != nil {
-        p.Log.Error(err)
-        p.Topic.Stop()
+        front.Log.Error(err)
+        front.PubSub.Topic.Stop()
         os.Exit(1)
     }
-    p.Topic.Stop()
+    front.PubSub.Topic.Stop()
     os.Exit(0)
 }
 
@@ -60,32 +102,57 @@ func server() error {
     r := mux.NewRouter()
     r.HandleFunc("/message", handleMessage).Methods("POST")
     r.HandleFunc("/status", status).Methods("GET")
-    p.Log.Info("starting frontend relay server on port " + port)
+    front.Log.Info("starting frontend relay server on port " + port)
+    front.Log.Info("using message topic: " + front.PubSub.Topic.String())
     return http.ListenAndServe(":" + port, r)
 }
 
 func status(resp http.ResponseWriter, req *http.Request) {
-    if p.Log.Level() == logger.TraceLVL {
+    if front.Log.Level() == logger.TraceLVL {
         addr, err := parseAddress(req)
         if err != nil {
-            p.Log.Error(err)
+            front.Log.Error(err)
         } else {
-            p.Log.Trace("healthcheck from " + addr)
+            front.Log.Trace("healthcheck from " + addr)
         }
     }
     resp.WriteHeader(http.StatusOK)
 }
 
 func handleMessage(resp http.ResponseWriter, req *http.Request) {
+    addr, err := parseAddress(req)
+    if err != nil {
+        addr = "<could not parse ip>"
+    }
+
+    apiKey, err := parseAPIKey(req)
+    if err != nil {
+        front.Log.Error(err)
+        resp.WriteHeader(http.StatusNetworkAuthenticationRequired)
+        return
+    }
+
+    validAPIKey, err := front.Auth.ValidAPIKey(apiKey)
+    if err != nil {
+        front.Log.Error(err)
+        resp.WriteHeader(http.StatusInternalServerError)
+        return
+    }
+    if validAPIKey != true {
+        front.Log.Trace("invalid api key " + apiKey + " from " + addr)
+        resp.WriteHeader(http.StatusNetworkAuthenticationRequired)
+        return
+    }
+
     messageBytes, err := parseMessage(req)
     if err != nil {
-        p.Log.Error(err)
+        front.Log.Error(err)
         resp.WriteHeader(http.StatusInternalServerError)
         return
     }
 
     if err := send(messageBytes); err != nil {
-        p.Log.Error(err)
+        front.Log.Error(err)
         resp.WriteHeader(http.StatusInternalServerError)
         return
     }
@@ -93,10 +160,10 @@ func handleMessage(resp http.ResponseWriter, req *http.Request) {
 }
 
 func send(payload []byte) error {
-    id, err := p.Topic.Publish(p.CTX, &pubsub.Message{Data: payload}).Get(p.CTX)
+    id, err := front.PubSub.Topic.Publish(front.PubSub.CTX, &pubsub.Message{Data: payload}).Get(front.PubSub.CTX)
     if err != nil {
         return err
     }
-    p.Log.Info("published message: " + id )
+    front.Log.Info("published message: " + id )
     return nil
 }
