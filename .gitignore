@@ -5,3 +5,4 @@ forwarder/forwarder
 frontend/frontend
 cmd/forwarder/forwarder
 cmd/frontend/frontend
+cmd/frontend/frontend
