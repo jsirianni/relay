@@ -1,5 +1,7 @@
 WORK_DIR := $(shell pwd)
 
+VERSION := $(shell cat version)
+
 build-all: build-frontend build-forwarder clean
 
 build-frontend: clean-frontend
@@ -43,5 +45,11 @@ prune-docker:
 push: push-all
 
 push-all:
-	docker push firefoxx04/relay-frontend:latest
-	docker push firefoxx04/relay-forwarder:latest
+	docker push firefoxx04/relay-frontend
+	docker push firefoxx04/relay-forwarder
+
+release: build-all
+	docker tag firefoxx04/relay-frontend:latest firefoxx04/relay-frontend:${VERSION}
+	docker tag firefoxx04/relay-forwarder:latest firefoxx04/relay-forwarder:${VERSION}
+	docker push firefoxx04/relay-frontend:${VERSION}
+	docker push firefoxx04/relay-forwarder:${VERSION}
