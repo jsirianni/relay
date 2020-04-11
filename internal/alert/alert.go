@@ -6,6 +6,7 @@ import (
 	"github.com/jsirianni/relay/internal/util/logger"
 	"github.com/jsirianni/relay/internal/alert/slack"
 	"github.com/jsirianni/relay/internal/alert/terminal"
+	"github.com/jsirianni/relay/internal/alert/sendgrid"
 )
 
 type Alert interface {
@@ -34,4 +35,29 @@ func NewSlack(hookURL, channel string, l logger.Logger) (Alert, error) {
 
 func NewTerminal(l logger.Logger) (Alert, error) {
 	return terminal.Terminal{l}, nil
+}
+
+func NewSendGrid(fromEmail, toEmail, apiKey string, l logger.Logger) (Alert, error) {
+	if fromEmail == "" {
+		return nil, errors.New("sendgrid from email is not set")
+	}
+
+	if toEmail == "" {
+		return nil, errors.New("sendgrid to email is not set")
+	}
+
+	if apiKey == "" {
+		return nil, errors.New("sendgrid api key not set")
+	}
+
+	if l.Configured() == false {
+		return nil, errors.New("sendgrid logger config is nil")
+	}
+
+	return sendgrid.SendGrid{
+		FromEmail: fromEmail,
+		ToEmail:   toEmail,
+		APIKey:    apiKey,
+		Log:       l,
+	}, nil
 }
