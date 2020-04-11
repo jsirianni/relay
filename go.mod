@@ -11,6 +11,8 @@ require (
 	github.com/gorilla/mux v1.7.4
 	github.com/parnurzeal/gorequest v0.2.16 // indirect
 	github.com/pkg/errors v0.9.1
+	github.com/sendgrid/rest v2.4.1+incompatible // indirect
+	github.com/sendgrid/sendgrid-go v3.5.0+incompatible
 	google.golang.org/api v0.20.0
 	moul.io/http2curl v1.0.0 // indirect
 )
