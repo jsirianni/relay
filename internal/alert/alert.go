@@ -30,10 +30,17 @@ func NewSlack(hookURL, channel string, l logger.Logger) (Alert, error) {
 		return nil, errors.New("slack channel is not set")
 	}
 
+	if l.Configured() == false {
+		return nil, errors.New("slack logger is not configured")
+	}
+
 	return slack.Slack{hookURL,channel,l}, nil
 }
 
 func NewTerminal(l logger.Logger) (Alert, error) {
+	if l.Configured() == false {
+		return nil, errors.New("terminal logger is not configured")
+	}
 	return terminal.Terminal{l}, nil
 }
 
