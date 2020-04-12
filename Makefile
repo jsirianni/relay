@@ -2,7 +2,7 @@ WORK_DIR := $(shell pwd)
 
 VERSION := $(shell cat version)
 
-build-all: build-frontend build-forwarder clean
+build-all: test build-frontend build-forwarder clean
 
 build-frontend: clean-frontend
 	mkdir -p docker/frontend/stage
@@ -24,6 +24,8 @@ quick-forwarder:
 
 test-all:
 	go test ./...
+
+test: test-all
 
 lint-all:
 	golint ./...
