@@ -9,6 +9,7 @@ import (
     "github.com/jsirianni/relay/internal/message"
 
     "github.com/pkg/errors"
+    "github.com/google/uuid"
 )
 
 func parseMessage(req *http.Request) ([]byte, error) {
@@ -64,7 +65,9 @@ func parseAPIKey(req *http.Request) (string, error) {
     if apiKey == "" {
         return "", errors.New(missingAPIKeyHeader)
     }
-    return apiKey, nil
+
+     _, err := uuid.Parse(apiKey)
+    return apiKey, err
 }
 
 func parsePayload(req *http.Request) (IncomingRequest, error) {
