@@ -15,12 +15,14 @@ import (
 )
 
 type Forwarder struct {
-    Queue queue.Queue
-    Log logger.Logger
+    Destination string
+    Alert       alert.Alert
+    Queue       queue.Queue
+    Log         logger.Logger
 }
 
 var f Forwarder
-var destination alert.Alert
+//var destination alert.Alert
 var subscription string
 
 func init() {
@@ -48,16 +50,16 @@ func main() {
         os.Exit(1)
     }
 
-    destination, err = initDest()
+    f.Alert, err = initDest()
     if err != nil {
         f.Log.Error(err)
         os.Exit(1)
     }
-    confBytes, err := destination.Config()
+    confBytes, err := f.Alert.Config()
     if err != nil {
         f.Log.Trace(err)
     } else {
-            f.Log.Trace("destination configured with config: " + string(confBytes))
+        f.Log.Trace("destination configured with config: " + string(confBytes))
     }
 
     wg := sync.Mutex{}
@@ -91,9 +93,9 @@ func process(mRaw []byte) error {
     }
     f.Log.Info("new message: " + string(mSafe))
 
-    if err := destination.Message(m.Payload.Text); err != nil {
+    if err := f.Alert.Message(m.Payload.Text); err != nil {
         return err
     }
-    f.Log.Trace("message sent to destination '" + destination.Type() + "'")
+    f.Log.Trace("message sent to destination '" + f.Alert.Type() + "'")
     return nil
 }
