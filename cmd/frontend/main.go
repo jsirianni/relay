@@ -6,19 +6,18 @@ import (
     "flag"
     "net/http"
 
-    "github.com/jsirianni/relay/internal/queue/google"
+    "github.com/jsirianni/relay/internal/queue"
     "github.com/jsirianni/relay/internal/util/logger"
     "github.com/jsirianni/relay/internal/auth"
     "github.com/jsirianni/relay/internal/auth/gcpdatastore"
     "github.com/jsirianni/relay/internal/env"
 
-    "cloud.google.com/go/pubsub"
     "github.com/gorilla/mux"
 )
 
 type Frontend struct {
     ProjectID string
-    PubSub    google.PubSubConf
+    Queue     queue.Queue
     Auth      auth.Auth
     Log       logger.Logger
 }
@@ -41,9 +40,13 @@ func init() {
     flag.StringVar(&port, "port", "8080", "server http port")
     flag.StringVar(&topic, "topic", "", "pubsub topic to publish messages to")
     flag.Parse()
+
+    if topic == "" {
+        panic("topic must be set")
+    }
 }
 
-func (f *Frontend) Init() error {
+func (f *Frontend) Init(topicName string) error {
     var err error
 
     f.ProjectID, err = env.ENVProjectID()
@@ -65,7 +68,7 @@ func (f *Frontend) Init() error {
         return err
     }
 
-    f.PubSub, err = google.Init()
+    f.Queue, err = queue.New("google", topicName, f.Log)
     if err != nil {
         return err
     }
@@ -74,23 +77,16 @@ func (f *Frontend) Init() error {
 }
 
 func main() {
-    if err := front.Init(); err != nil {
+    if err := front.Init(topic); err != nil {
         fmt.Fprint(os.Stderr, err.Error())
         os.Exit(1)
     }
 
-    if topic == "" {
-        front.Log.Error("topic must be set")
-        os.Exit(1)
-    }
-
-    front.PubSub.Topic = front.PubSub.Client.Topic(topic)
+    defer front.Queue.Stop()
     if err := server(); err != nil {
         front.Log.Error(err)
-        front.PubSub.Topic.Stop()
         os.Exit(1)
     }
-    front.PubSub.Topic.Stop()
     os.Exit(0)
 }
 
@@ -99,7 +95,7 @@ func server() error {
     r.HandleFunc("/message", handleMessage).Methods("POST")
     r.HandleFunc("/status", status).Methods("GET")
     front.Log.Info("starting frontend relay server on port " + port)
-    front.Log.Info("using message topic: " + front.PubSub.Topic.String())
+    front.Log.Info("using message topic: " + front.Queue.TopicName())
     return http.ListenAndServe(":" + port, r)
 }
 
@@ -140,26 +136,17 @@ func handleMessage(resp http.ResponseWriter, req *http.Request) {
         return
     }
 
-    messageBytes, err := parseMessage(req)
+    payload, err := parseMessage(req)
     if err != nil {
         front.Log.Error(err)
         resp.WriteHeader(http.StatusInternalServerError)
         return
     }
 
-    if err := send(messageBytes); err != nil {
+    if err := front.Queue.Publish(payload); err != nil {
         front.Log.Error(err)
         resp.WriteHeader(http.StatusInternalServerError)
         return
     }
     resp.WriteHeader(http.StatusOK)
-}
-
-func send(payload []byte) error {
-    id, err := front.PubSub.Topic.Publish(front.PubSub.CTX, &pubsub.Message{Data: payload}).Get(front.PubSub.CTX)
-    if err != nil {
-        return err
-    }
-    front.Log.Info("published message: " + id )
-    return nil
 }
