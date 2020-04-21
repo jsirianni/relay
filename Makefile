@@ -2,7 +2,7 @@ WORK_DIR := $(shell pwd)
 
 VERSION := $(shell cat version)
 
-build-all: test build-frontend build-forwarder clean
+build: test build-frontend build-forwarder clean
 
 build-frontend: clean-frontend
 	mkdir -p docker/frontend/stage
@@ -14,7 +14,7 @@ build-forwarder: clean-forwarder
 	ls | grep -v docker | xargs -I{} cp -r {} docker/forwarder/stage
 	cd docker/forwarder && docker build . -t firefoxx04/relay-forwarder:latest
 
-quick-all: quick-frontend quick-forwarder
+quick: quick-frontend quick-forwarder
 
 quick-frontend:
 	cd cmd/frontend/ &&	go build
@@ -41,12 +41,7 @@ clean-frontend:
 clean-forwarder:
 	rm -rf docker/forwarder/stage
 
-prune-docker:
-	docker system prune --force
-
-push: push-all
-
-push-all:
+push:
 	docker push firefoxx04/relay-frontend
 	docker push firefoxx04/relay-forwarder
 
