@@ -30,18 +30,18 @@ func initDest() (alert.Alert, error) {
     if destType == typeSlack {
         hookURL := os.Getenv(envSlackHookURL)
         channel := os.Getenv(envSlackChannel)
-        return alert.NewSlack(hookURL, channel, p.Log)
+        return alert.NewSlack(hookURL, channel, f.Log)
     }
 
     if destType == typeTerm {
-        return alert.NewTerminal(p.Log)
+        return alert.NewTerminal(f.Log)
     }
 
     if destType == typeSendGrid {
         from := os.Getenv(envSendGridFromEmail)
         to   := os.Getenv(envSendGridToEmail)
         apiKey := os.Getenv(envSendGridAPIKey)
-        return alert.NewSendGrid(from, to, apiKey, p.Log)
+        return alert.NewSendGrid(from, to, apiKey, f.Log)
     }
 
     return nil, errors.New(destType + " is not supported")

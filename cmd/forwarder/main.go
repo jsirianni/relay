@@ -1,65 +1,80 @@
 package main
 
 import (
-    "fmt"
     "os"
+    "sync"
     "flag"
-    "context"
     "encoding/json"
 
-    "github.com/jsirianni/relay/internal/queue/google"
     "github.com/jsirianni/relay/internal/message"
+    "github.com/jsirianni/relay/internal/queue"
+    "github.com/jsirianni/relay/internal/queue/qmessage"
     "github.com/jsirianni/relay/internal/alert"
-
-    "cloud.google.com/go/pubsub"
+    "github.com/jsirianni/relay/internal/env"
+    "github.com/jsirianni/relay/internal/util/logger"
 )
 
-var p google.PubSubConf
+type Forwarder struct {
+    Queue queue.Queue
+    Log logger.Logger
+}
+
+var f Forwarder
 var destination alert.Alert
 var subscription string
 
 func init() {
     flag.StringVar(&subscription, "subscription", "", "pubsub subscription to listen on")
     flag.Parse()
+
+    if subscription == "" {
+        panic("subscription must be set")
+    }
+
+    logLevel, err := env.ENVLogLevel()
+    if err != nil {
+        panic(err)
+    }
+    if err := f.Log.Configure(logLevel); err != nil {
+        panic(err)
+    }
 }
 
 func main() {
     var err error
-    p, err = google.Init()
+    f.Queue, err = queue.New("google", subscription, f.Log)
     if err != nil {
-        fmt.Fprint(os.Stderr, err.Error())
+        f.Log.Error(err)
         os.Exit(1)
     }
 
     destination, err = initDest()
     if err != nil {
-        p.Log.Error(err)
+        f.Log.Error(err)
         os.Exit(1)
     }
     confBytes, err := destination.Config()
     if err != nil {
-        p.Log.Trace(err)
+        f.Log.Trace(err)
     } else {
-            p.Log.Trace("destination configured with config: " + string(confBytes))
+            f.Log.Trace("destination configured with config: " + string(confBytes))
     }
 
-    subscribe()
-}
+    wg := sync.Mutex{}
+    c := make(chan qmessage.Message)
 
-func subscribe() {
-    p.Log.Info("starting listener on subscription: " + subscription)
-    sub := p.Client.Subscription(subscription)
-    cctx, _ := context.WithCancel(p.CTX)
-    err := sub.Receive(cctx, func(ctx context.Context, msg *pubsub.Message) {
-        if err := process(msg.Data); err != nil {
-            p.Log.Error(err)
+    go f.Queue.Listen(subscription, c, &wg)
+    for {
+        m := <-c
+        wg.Lock()
+        if err := process(m.Payload); err != nil {
+            f.Log.Trace(err.Error())
+            m.ERR = err
         } else {
-            msg.Ack()
-            p.Log.Trace("ack sent for message " + msg.ID)
+            m.ACK = true
         }
-    })
-    if err != nil {
-        p.Log.Error(err)
+        c <- m
+        wg.Unlock()
     }
 }
 
@@ -74,11 +89,11 @@ func process(mRaw []byte) error {
     if err != nil {
         return err
     }
-    p.Log.Info("new message: " + string(mSafe))
+    f.Log.Info("new message: " + string(mSafe))
 
     if err := destination.Message(m.Payload.Text); err != nil {
         return err
     }
-    p.Log.Trace("message sent to destination '" + destination.Type() + "'")
+    f.Log.Trace("message sent to destination '" + destination.Type() + "'")
     return nil
 }
