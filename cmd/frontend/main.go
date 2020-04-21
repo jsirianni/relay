@@ -23,10 +23,6 @@ type Frontend struct {
     Log       logger.Logger
 }
 
-type IncomingRequest struct {
-    Text string `json:"text"`
-}
-
 var front Frontend
 
 var (

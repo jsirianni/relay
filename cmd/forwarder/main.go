@@ -76,7 +76,7 @@ func process(mRaw []byte) error {
     }
     p.Log.Info("new message: " + string(mSafe))
 
-    if err := destination.Message(m.Text); err != nil {
+    if err := destination.Message(m.Payload.Text); err != nil {
         return err
     }
     p.Log.Trace("message sent to destination '" + destination.Type() + "'")

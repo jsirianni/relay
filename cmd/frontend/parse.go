@@ -4,7 +4,7 @@ import (
     "strings"
     "net/http"
     "net"
-    "encoding/json"
+    "io/ioutil"
 
     "github.com/jsirianni/relay/internal/message"
 
@@ -31,19 +31,22 @@ func parseMessage(req *http.Request) ([]byte, error) {
         return nil, err
     }
 
-    i, err := parsePayload(req)
+    p, err := ioutil.ReadAll(req.Body)
     if err != nil {
-        front.Log.Trace(errors.Wrap(err, "failed to parse json body"))
         return nil, err
     }
-    m.SetText(i.Text)
+    if err := m.ParsePayload(p); err != nil {
+        return nil, err
+    }
 
+    // safely log the message without the APIKey
     safeJson, err := m.BytesSafe()
     if err != nil {
         front.Log.Error(err)
     }
     front.Log.Info("new message: " + string(safeJson))
 
+    // return the message as json
     return m.Bytes()
 }
 
@@ -68,11 +71,4 @@ func parseAPIKey(req *http.Request) (string, error) {
 
      _, err := uuid.Parse(apiKey)
     return apiKey, err
-}
-
-func parsePayload(req *http.Request) (IncomingRequest, error) {
-    d := json.NewDecoder(req.Body)
-    i := IncomingRequest{}
-    err := d.Decode(&i)
-    return i, err
 }
