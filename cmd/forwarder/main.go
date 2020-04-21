@@ -15,24 +15,17 @@ import (
 )
 
 type Forwarder struct {
-    Destination string
     Alert       alert.Alert
     Queue       queue.Queue
+    QueueType   string
     Log         logger.Logger
 }
 
 var f Forwarder
-//var destination alert.Alert
+var queueType string
 var subscription string
 
 func init() {
-    flag.StringVar(&subscription, "subscription", "", "pubsub subscription to listen on")
-    flag.Parse()
-
-    if subscription == "" {
-        panic("subscription must be set")
-    }
-
     logLevel, err := env.ENVLogLevel()
     if err != nil {
         panic(err)
@@ -40,11 +33,23 @@ func init() {
     if err := f.Log.Configure(logLevel); err != nil {
         panic(err)
     }
+
+    flag.StringVar(&subscription, "subscription", "", "pubsub subscription to listen on")
+    flag.StringVar(&queueType, "queue-type", "", "message queue type (defaults to Google Pubsub)")
+    flag.Parse()
+
+    if subscription == "" {
+        panic("subscription must be set")
+    }
+
+    if queueType == "" {
+        queueType = "google"
+    }
 }
 
 func main() {
     var err error
-    f.Queue, err = queue.New("google", subscription, f.Log)
+    f.Queue, err = queue.New(queueType, subscription, f.Log)
     if err != nil {
         f.Log.Error(err)
         os.Exit(1)
