@@ -15,13 +15,21 @@ import (
 )
 
 type Forwarder struct {
-    Alert       alert.Alert
-    Queue       queue.Queue
-    QueueType   string
-    Log         logger.Logger
+    // Multiple alert types can be configured, however, a default
+    // alert type must be specified for clients that do not provide a
+    // prefered alert mechanism
+    Alert        map[string]alert.Alert
+    DefaultAlert string
+
+    // Message queue interface
+    Queue        queue.Queue
+    QueueType    string
+
+    Log          logger.Logger
 }
 
 var f Forwarder
+var destType string
 var queueType string
 var subscription string
 
@@ -36,6 +44,7 @@ func init() {
 
     flag.StringVar(&subscription, "subscription", "", "pubsub subscription to listen on")
     flag.StringVar(&queueType, "queue-type", "", "message queue type (defaults to Google Pubsub)")
+    flag.StringVar(&destType, "dest-type", "", "destination type (required for multiple destination types only)")
     flag.Parse()
 
     if subscription == "" {
@@ -55,12 +64,11 @@ func main() {
         os.Exit(1)
     }
 
-    f.Alert, err = initDest()
-    if err != nil {
+    if err = initDests(); err != nil {
         f.Log.Error(err)
         os.Exit(1)
     }
-    confBytes, err := f.Alert.Config()
+    confBytes, err := f.Alert[f.DefaultAlert].Config()
     if err != nil {
         f.Log.Trace(err)
     } else {
@@ -98,9 +106,9 @@ func process(mRaw []byte) error {
     }
     f.Log.Info("new message: " + string(mSafe))
 
-    if err := f.Alert.Message(m.Payload.Text); err != nil {
+    if err := f.Alert[f.DefaultAlert].Message(m.Payload.Text); err != nil {
         return err
     }
-    f.Log.Trace("message sent to destination '" + f.Alert.Type() + "'")
+    f.Log.Trace("message sent to destination '" + f.Alert[f.DefaultAlert].Type() + "'")
     return nil
 }
