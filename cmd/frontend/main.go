@@ -3,7 +3,6 @@ package main
 import (
     "os"
     "fmt"
-    "flag"
     "net/http"
 
     "github.com/jsirianni/relay/internal/queue"
@@ -37,12 +36,24 @@ const (
 )
 
 func init() {
-    flag.StringVar(&port, "port", "8080", "server http port")
-    flag.StringVar(&topic, "topic", "", "pubsub topic to publish messages to")
-    flag.Parse()
+    var err error
 
-    if topic == "" {
-        panic("topic must be set")
+    port, err = env.FrontendPort()
+    if err != nil {
+        // panic if the error is something other than the
+        // environment not being set. This indicates trouble with
+        // the os package, which should not happen
+        if !env.IsEnvNotSetError(err) {
+            panic(err)
+        }
+
+        // set default value when environment is not set
+        port = "8080"
+    }
+
+    topic, err = env.Topic()
+    if err != nil {
+        panic(err)
     }
 }
 

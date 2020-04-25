@@ -3,7 +3,6 @@ package main
 import (
     "os"
     "sync"
-    "flag"
     "encoding/json"
 
     "github.com/jsirianni/relay/internal/message"
@@ -39,16 +38,14 @@ func init() {
         panic(err)
     }
 
-    flag.StringVar(&subscription, "subscription", "", "pubsub subscription to listen on")
-    flag.StringVar(&queueType, "queue-type", "", "message queue type (defaults to Google Pubsub)")
-    flag.Parse()
-
-    if subscription == "" {
-        panic("subscription must be set")
+    subscription, err = env.Subscription()
+    if err != nil {
+        panic(err)
     }
 
-    if queueType == "" {
-        queueType = "google"
+    queueType, err = env.QueueType()
+    if err != nil {
+        panic(err)
     }
 }
 
