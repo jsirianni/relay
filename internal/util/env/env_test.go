@@ -23,22 +23,22 @@ type TestCase struct {
 }
 
 func TestConstants(t *testing.T) {
-    if envLogLevel != "RELAY_LOG_LEVEL" {
+    if ENVLogLevel != "RELAY_LOG_LEVEL" {
         t.Errorf("envLogLevel should be RELAY_LOG_LEVEL")
     }
-    if envTopic !=  "RELAY_TOPIC" {
+    if ENVTopic !=  "RELAY_TOPIC" {
         t.Errorf("envTopic should be RELAY_TOPIC")
     }
-    if envSub != "RELAY_SUBSCRIPTION" {
+    if ENVSub != "RELAY_SUBSCRIPTION" {
         t.Errorf("envSub should be RELAY_SUBSCRIPTION")
     }
-    if envFrontPort != "RELAY_FRONTEND_PORT" {
+    if ENVFrontPort != "RELAY_FRONTEND_PORT" {
         t.Errorf("envFrontPort should be RELAY_FRONTEND_PORT")
     }
-    if envQueueType != "RELAY_QUEUE_TYPE" {
+    if ENVQueueType != "RELAY_QUEUE_TYPE" {
         t.Errorf("envQueueType should be RELAY_QUEUE_TYPE")
     }
-    if envGoogleProjectID != "RELAY_GOOGLE_PROJECT_ID" {
+    if ENVGoogleProjectID != "RELAY_GOOGLE_PROJECT_ID" {
         t.Errorf("envProjectID should be RELAY_GOOGLE_PROJECT_ID")
     }
 }

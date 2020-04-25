@@ -8,49 +8,49 @@ import (
 
 // global constants for frontend and forwarder services
 const (
-    envLogLevel = "RELAY_LOG_LEVEL"
-    envTopic    = "RELAY_TOPIC"
-    envSub      = "RELAY_SUBSCRIPTION"
+    ENVLogLevel = "RELAY_LOG_LEVEL"
+    ENVTopic    = "RELAY_TOPIC"
+    ENVSub      = "RELAY_SUBSCRIPTION"
 )
 
 // frontend
 const (
-    envFrontPort = "RELAY_FRONTEND_PORT"
+    ENVFrontPort = "RELAY_FRONTEND_PORT"
 )
 
 // forwarder
 const (
-    envQueueType = "RELAY_QUEUE_TYPE"
+    ENVQueueType = "RELAY_QUEUE_TYPE"
 )
 
 // google services
 const (
     // Google queue
-    envGoogleProjectID = "RELAY_GOOGLE_PROJECT_ID"
+    ENVGoogleProjectID = "RELAY_GOOGLE_PROJECT_ID"
 )
 
 func FrontendPort() (string, error) {
-    return read(envFrontPort)
+    return read(ENVFrontPort)
 }
 
 func GoogleProjectID() (string, error) {
-    return read(envGoogleProjectID)
+    return read(ENVGoogleProjectID)
 }
 
 func LogLevel() (string, error) {
-    return read(envLogLevel)
+    return read(ENVLogLevel)
 }
 
 func QueueType() (string, error) {
-    return read(envQueueType)
+    return read(ENVQueueType)
 }
 
 func Subscription() (string, error) {
-    return read(envSub)
+    return read(ENVSub)
 }
 
 func Topic() (string, error) {
-    return read(envTopic)
+    return read(ENVTopic)
 }
 
 func read(e string) (string, error) {
