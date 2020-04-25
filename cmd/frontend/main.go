@@ -2,7 +2,6 @@ package main
 
 import (
     "os"
-    "fmt"
     "net/http"
 
     "github.com/jsirianni/relay/internal/queue"
@@ -21,8 +20,9 @@ type Frontend struct {
     Log       logger.Logger
 }
 
-var front Frontend
+var f Frontend
 
+// globals set in init()
 var (
     port string
     topic string
@@ -36,7 +36,17 @@ const (
 )
 
 func init() {
-    var err error
+    logLevel, err := env.LogLevel()
+    if err != nil {
+        if !env.IsEnvNotSetError(err) {
+            panic(err)
+        }
+        // set default value when environment is not set
+        logLevel = logger.InfoLVL
+    }
+    if err := f.Log.Configure(logLevel); err != nil {
+        panic(err)
+    }
 
     port, err = env.FrontendPort()
     if err != nil {
@@ -57,24 +67,11 @@ func init() {
     }
 }
 
-func (f *Frontend) Init(topicName string) error {
+func (f *Frontend) Init() error {
     var err error
 
     f.ProjectID, err = env.GoogleProjectID()
     if err != nil {
-        return err
-    }
-
-    logLevel, err := env.LogLevel()
-    if err != nil {
-        if !env.IsEnvNotSetError(err) {
-            return err
-        }
-    }
-    if logLevel == "" {
-        logLevel = logger.InfoLVL
-    }
-    if err := front.Log.Configure(logLevel); err != nil {
         return err
     }
 
@@ -83,7 +80,7 @@ func (f *Frontend) Init(topicName string) error {
         return err
     }
 
-    f.Queue, err = queue.New("google", topicName, f.Log)
+    f.Queue, err = queue.New("google", topic, f.Log)
     if err != nil {
         return err
     }
@@ -92,14 +89,14 @@ func (f *Frontend) Init(topicName string) error {
 }
 
 func main() {
-    if err := front.Init(topic); err != nil {
-        fmt.Fprint(os.Stderr, err.Error())
+    if err := f.Init(); err != nil {
+        f.Log.Error(err)
         os.Exit(1)
     }
 
-    defer front.Queue.Stop()
+    defer f.Queue.Stop()
     if err := server(); err != nil {
-        front.Log.Error(err)
+        f.Log.Error(err)
         os.Exit(1)
     }
     os.Exit(0)
@@ -109,18 +106,18 @@ func server() error {
     r := mux.NewRouter()
     r.HandleFunc("/message", handleMessage).Methods("POST")
     r.HandleFunc("/status", status).Methods("GET")
-    front.Log.Info("starting frontend relay server on port " + port)
-    front.Log.Info("using message topic: " + front.Queue.TopicName())
+    f.Log.Info("starting frontend relay server on port " + port)
+    f.Log.Info("using message topic: " + f.Queue.TopicName())
     return http.ListenAndServe(":" + port, r)
 }
 
 func status(resp http.ResponseWriter, req *http.Request) {
-    if front.Log.Level() == logger.TraceLVL {
+    if f.Log.Level() == logger.TraceLVL {
         addr, err := parseAddress(req)
         if err != nil {
-            front.Log.Error(err)
+            f.Log.Error(err)
         } else {
-            front.Log.Trace("healthcheck from " + addr)
+            f.Log.Trace("healthcheck from " + addr)
         }
     }
     resp.WriteHeader(http.StatusOK)
@@ -134,32 +131,32 @@ func handleMessage(resp http.ResponseWriter, req *http.Request) {
 
     apiKey, err := parseAPIKey(req)
     if err != nil {
-        front.Log.Error(err)
+        f.Log.Error(err)
         resp.WriteHeader(http.StatusNetworkAuthenticationRequired)
         return
     }
 
-    validAPIKey, err := front.Auth.ValidAPIKey(apiKey)
+    validAPIKey, err := f.Auth.ValidAPIKey(apiKey)
     if err != nil {
-        front.Log.Error(err)
+        f.Log.Error(err)
         resp.WriteHeader(http.StatusInternalServerError)
         return
     }
     if validAPIKey != true {
-        front.Log.Trace("invalid api key " + apiKey + " from " + addr)
+        f.Log.Trace("invalid api key " + apiKey + " from " + addr)
         resp.WriteHeader(http.StatusNetworkAuthenticationRequired)
         return
     }
 
     payload, err := parseMessage(req)
     if err != nil {
-        front.Log.Error(err)
+        f.Log.Error(err)
         resp.WriteHeader(http.StatusInternalServerError)
         return
     }
 
-    if err := front.Queue.Publish(payload); err != nil {
-        front.Log.Error(err)
+    if err := f.Queue.Publish(payload); err != nil {
+        f.Log.Error(err)
         resp.WriteHeader(http.StatusInternalServerError)
         return
     }
