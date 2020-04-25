@@ -21,8 +21,12 @@ type Forwarder struct {
 }
 
 var f Forwarder
-var queueType string
-var subscription string
+
+// globals set in init()
+var (
+    queueType string
+    subscription string
+)
 
 func init() {
     logLevel, err := env.LogLevel()
@@ -30,8 +34,7 @@ func init() {
         if !env.IsEnvNotSetError(err) {
             panic(err)
         }
-    }
-    if logLevel == "" {
+        // set default value when environment is not set
         logLevel = logger.InfoLVL
     }
     if err := f.Log.Configure(logLevel); err != nil {
@@ -49,24 +52,32 @@ func init() {
     }
 }
 
-func main() {
+func (f *Forwarder) Init() error {
     var err error
+    
     f.Queue, err = queue.New(queueType, subscription, f.Log)
     if err != nil {
-        f.Log.Error(err)
-        os.Exit(1)
+        return err
     }
 
     f.Alert, err = initDest()
     if err != nil {
-        f.Log.Error(err)
-        os.Exit(1)
+        return err
     }
     confBytes, err := f.Alert.Config()
     if err != nil {
-        f.Log.Trace(err)
+        return err
     } else {
         f.Log.Trace("destination configured with config: " + string(confBytes))
+    }
+
+    return nil
+}
+
+func main() {
+    if err := f.Init(); err != nil {
+        f.Log.Error(err)
+        os.Exit(1)
     }
 
     wg := sync.Mutex{}
