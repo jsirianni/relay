@@ -10,7 +10,7 @@ import (
     "github.com/jsirianni/relay/internal/queue"
     "github.com/jsirianni/relay/internal/queue/qmessage"
     "github.com/jsirianni/relay/internal/alert"
-    "github.com/jsirianni/relay/internal/env"
+    "github.com/jsirianni/relay/internal/util/env"
     "github.com/jsirianni/relay/internal/util/logger"
 )
 
@@ -26,9 +26,12 @@ var queueType string
 var subscription string
 
 func init() {
-    logLevel, err := env.ENVLogLevel()
+    logLevel, err := env.LogLevel()
     if err != nil {
         panic(err)
+    }
+    if logLevel == "" {
+        logLevel = logger.InfoLVL
     }
     if err := f.Log.Configure(logLevel); err != nil {
         panic(err)

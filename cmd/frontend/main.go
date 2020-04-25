@@ -10,7 +10,7 @@ import (
     "github.com/jsirianni/relay/internal/util/logger"
     "github.com/jsirianni/relay/internal/auth"
     "github.com/jsirianni/relay/internal/auth/gcpdatastore"
-    "github.com/jsirianni/relay/internal/env"
+    "github.com/jsirianni/relay/internal/util/env"
 
     "github.com/gorilla/mux"
 )
@@ -49,16 +49,18 @@ func init() {
 func (f *Frontend) Init(topicName string) error {
     var err error
 
-    f.ProjectID, err = env.ENVProjectID()
+    f.ProjectID, err = env.ProjectID()
     if err != nil {
         return err
     }
 
-    logLevel, err := env.ENVLogLevel()
+    logLevel, err := env.LogLevel()
     if err != nil {
         return err
     }
-
+    if logLevel == "" {
+        logLevel = logger.InfoLVL
+    }
     if err := front.Log.Configure(logLevel); err != nil {
         return err
     }
