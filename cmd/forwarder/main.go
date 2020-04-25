@@ -28,7 +28,9 @@ var subscription string
 func init() {
     logLevel, err := env.LogLevel()
     if err != nil {
-        panic(err)
+        if !env.IsEnvNotSetError(err) {
+            panic(err)
+        }
     }
     if logLevel == "" {
         logLevel = logger.InfoLVL

@@ -6,30 +6,57 @@ import (
     "github.com/pkg/errors"
 )
 
+// global constants for frontend and forwarder services
 const (
-    // Google queue
-    envProjectID = "RELAY_GOOGLE_PROJECT_ID"
-
-    // Global
-    envLogLevel  = "RELAY_LOG_LEVEL"
+    envLogLevel = "RELAY_LOG_LEVEL"
+    envTopic    = "RELAY_TOPIC"
+    envSub      = "RELAY_SUBSCRIPTION"
 )
 
-func LogLevel() (string, error) {
-    return optional(envLogLevel)
+// frontend
+const (
+    envFrontPort = "RELAY_FRONTEND_PORT"
+)
+
+// forwarder
+const (
+    envQueueType = "RELAY_QUEUE_TYPE"
+)
+
+// google services
+const (
+    // Google queue
+    envGoogleProjectID = "RELAY_GOOGLE_PROJECT_ID"
+)
+
+func FrontendPort() (string, error) {
+    return read(envFrontPort)
 }
 
 func GoogleProjectID() (string, error) {
-    return required(envProjectID)
+    return read(envGoogleProjectID)
 }
 
-func required(e string) (string, error) {
+func LogLevel() (string, error) {
+    return read(envLogLevel)
+}
+
+func QueueType() (string, error) {
+    return read(envQueueType)
+}
+
+func Subscription() (string, error) {
+    return read(envSub)
+}
+
+func Topic() (string, error) {
+    return read(envTopic)
+}
+
+func read(e string) (string, error) {
     x := os.Getenv(e)
     if x == "" {
-        return "", errors.New(e + " is not set in the environment")
+        return "", errors.New(e+": "+notSetERR)
     }
     return x, nil
-}
-
-func optional(e string) (string, error) {
-    return os.Getenv(e), nil
 }

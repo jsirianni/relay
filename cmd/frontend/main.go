@@ -56,7 +56,9 @@ func (f *Frontend) Init(topicName string) error {
 
     logLevel, err := env.LogLevel()
     if err != nil {
-        return err
+        if !env.IsEnvNotSetError(err) {
+            return err
+        }
     }
     if logLevel == "" {
         logLevel = logger.InfoLVL
