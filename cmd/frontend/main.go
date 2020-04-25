@@ -49,7 +49,7 @@ func init() {
 func (f *Frontend) Init(topicName string) error {
     var err error
 
-    f.ProjectID, err = env.ProjectID()
+    f.ProjectID, err = env.GoogleProjectID()
     if err != nil {
         return err
     }

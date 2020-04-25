@@ -7,7 +7,10 @@ import (
 )
 
 const (
-    envProjectID = "RELAY_PROJECT_ID"
+    // Google queue
+    envProjectID = "RELAY_GOOGLE_PROJECT_ID"
+
+    // Global
     envLogLevel  = "RELAY_LOG_LEVEL"
 )
 
@@ -15,7 +18,7 @@ func LogLevel() (string, error) {
     return optional(envLogLevel)
 }
 
-func ProjectID() (string, error) {
+func GoogleProjectID() (string, error) {
     return required(envProjectID)
 }
 

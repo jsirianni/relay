@@ -34,7 +34,7 @@ func Init(topic string, l logger.Logger) (Google, error) {
         return p, errors.New("logger is not configured")
     }
 
-    p.ProjectID, err = env.ProjectID()
+    p.ProjectID, err = env.GoogleProjectID()
     if err != nil {
         return p, err
     }
