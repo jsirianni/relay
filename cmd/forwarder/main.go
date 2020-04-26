@@ -3,14 +3,13 @@ package main
 import (
     "os"
     "sync"
-    "flag"
     "encoding/json"
 
     "github.com/jsirianni/relay/internal/message"
     "github.com/jsirianni/relay/internal/queue"
     "github.com/jsirianni/relay/internal/queue/qmessage"
     "github.com/jsirianni/relay/internal/alert"
-    "github.com/jsirianni/relay/internal/env"
+    "github.com/jsirianni/relay/internal/util/env"
     "github.com/jsirianni/relay/internal/util/logger"
 )
 
@@ -22,49 +21,63 @@ type Forwarder struct {
 }
 
 var f Forwarder
-var queueType string
-var subscription string
+
+// globals set in init()
+var (
+    queueType string
+    subscription string
+)
 
 func init() {
-    logLevel, err := env.ENVLogLevel()
+    logLevel, err := env.LogLevel()
     if err != nil {
-        panic(err)
+        if !env.IsEnvNotSetError(err) {
+            panic(err)
+        }
+        // set default value when environment is not set
+        logLevel = logger.InfoLVL
     }
     if err := f.Log.Configure(logLevel); err != nil {
         panic(err)
     }
 
-    flag.StringVar(&subscription, "subscription", "", "pubsub subscription to listen on")
-    flag.StringVar(&queueType, "queue-type", "", "message queue type (defaults to Google Pubsub)")
-    flag.Parse()
-
-    if subscription == "" {
-        panic("subscription must be set")
+    subscription, err = env.Subscription()
+    if err != nil {
+        panic(err)
     }
 
-    if queueType == "" {
-        queueType = "google"
+    queueType, err = env.QueueType()
+    if err != nil {
+        panic(err)
     }
 }
 
-func main() {
+func (f *Forwarder) Init() error {
     var err error
+    
     f.Queue, err = queue.New(queueType, subscription, f.Log)
     if err != nil {
-        f.Log.Error(err)
-        os.Exit(1)
+        return err
     }
 
     f.Alert, err = initDest()
     if err != nil {
-        f.Log.Error(err)
-        os.Exit(1)
+        return err
     }
     confBytes, err := f.Alert.Config()
     if err != nil {
-        f.Log.Trace(err)
+        return err
     } else {
         f.Log.Trace("destination configured with config: " + string(confBytes))
+    }
+
+    return nil
+}
+
+func main() {
+    if err := f.Init(); err != nil {
+        f.Log.Error(err)
+        os.Exit(1)
     }
 
     wg := sync.Mutex{}

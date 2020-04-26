@@ -27,7 +27,7 @@ func parseMessage(req *http.Request) ([]byte, error) {
         return nil, err
     }
     if err := m.SetAPIKey(apiKey); err != nil {
-        front.Log.Trace("invalid api key:" + apiKey)
+        f.Log.Trace("invalid api key:" + apiKey)
         return nil, err
     }
 
@@ -42,9 +42,9 @@ func parseMessage(req *http.Request) ([]byte, error) {
     // safely log the message without the APIKey
     safeJson, err := m.BytesSafe()
     if err != nil {
-        front.Log.Error(err)
+        f.Log.Error(err)
     }
-    front.Log.Info("new message: " + string(safeJson))
+    f.Log.Info("new message: " + string(safeJson))
 
     // return the message as json
     return m.Bytes()
@@ -57,7 +57,7 @@ func parseAddress(req *http.Request) (string, error) {
     }
     addr := net.ParseIP(raw)
     if addr == nil {
-        front.Log.Trace(errors.Wrap(errors.New(invalidIPError), "failed to parse address from '" + raw + "'"))
+        f.Log.Trace(errors.Wrap(errors.New(invalidIPError), "failed to parse address from '" + raw + "'"))
         return "", errors.New(invalidIPError)
     }
     return addr.String(), nil
