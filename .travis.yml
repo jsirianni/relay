@@ -7,7 +7,7 @@ env:
 services:
   - docker
 before_script:
-- curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/https://storage.googleapis.com/kubernetes-release/release/v1.15.9/bin/linux/amd64/kubectl/bin/linux/amd64/kubectl
+- curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.15.9/bin/linux/amd64/kubectl
 - chmod +x kubectl
 - sudo mv kubectl /usr/local/bin/
 - curl -Lo minikube https://storage.googleapis.com/minikube/releases/v1.9.2/minikube-linux-amd64
