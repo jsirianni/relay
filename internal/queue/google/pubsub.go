@@ -4,8 +4,8 @@ import (
     "sync"
     "context"
 
-    "github.com/jsirianni/relay/internal/util/env"
-    "github.com/jsirianni/relay/internal/util/logger"
+    "github.com/jsirianni/relay/internal/env"
+    "github.com/jsirianni/relay/internal/logger"
     "github.com/jsirianni/relay/internal/queue/qmessage"
 
     "cloud.google.com/go/pubsub"

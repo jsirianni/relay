@@ -3,7 +3,7 @@ package queue
 import (
     "sync"
 
-    "github.com/jsirianni/relay/internal/util/logger"
+    "github.com/jsirianni/relay/internal/logger"
     "github.com/jsirianni/relay/internal/queue/qmessage"
     "github.com/jsirianni/relay/internal/queue/google"
 

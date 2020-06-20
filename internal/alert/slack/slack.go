@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/jsirianni/relay/internal/util/logger"
+	"github.com/jsirianni/relay/internal/logger"
 
 	"github.com/pkg/errors"
 )

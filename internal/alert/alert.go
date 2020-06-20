@@ -3,7 +3,7 @@ package alert
 import (
 	"github.com/pkg/errors"
 
-	"github.com/jsirianni/relay/internal/util/logger"
+	"github.com/jsirianni/relay/internal/logger"
 	"github.com/jsirianni/relay/internal/alert/slack"
 	"github.com/jsirianni/relay/internal/alert/terminal"
 	"github.com/jsirianni/relay/internal/alert/sendgrid"

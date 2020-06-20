@@ -3,7 +3,7 @@ package alert
 import (
     "testing"
 
-    "github.com/jsirianni/relay/internal/util/logger"
+    "github.com/jsirianni/relay/internal/logger"
 )
 
 func newLogger() logger.Logger {

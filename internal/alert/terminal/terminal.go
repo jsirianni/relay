@@ -3,7 +3,7 @@ package terminal
 import (
     "encoding/json"
 
-    "github.com/jsirianni/relay/internal/util/logger"
+    "github.com/jsirianni/relay/internal/logger"
 )
 
 type Terminal struct {

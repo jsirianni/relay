@@ -3,7 +3,7 @@ package sendgrid
 import (
     "encoding/json"
 
-    "github.com/jsirianni/relay/internal/util/logger"
+    "github.com/jsirianni/relay/internal/logger"
 
     realsendgrid "github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
