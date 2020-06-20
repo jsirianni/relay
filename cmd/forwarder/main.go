@@ -9,8 +9,8 @@ import (
     "github.com/jsirianni/relay/internal/queue"
     "github.com/jsirianni/relay/internal/queue/qmessage"
     "github.com/jsirianni/relay/internal/alert"
-    "github.com/jsirianni/relay/internal/util/env"
-    "github.com/jsirianni/relay/internal/util/logger"
+    "github.com/jsirianni/relay/internal/env"
+    "github.com/jsirianni/relay/internal/logger"
 )
 
 type Forwarder struct {
@@ -54,7 +54,7 @@ func init() {
 
 func (f *Forwarder) Init() error {
     var err error
-    
+
     f.Queue, err = queue.New(queueType, subscription, f.Log)
     if err != nil {
         return err
