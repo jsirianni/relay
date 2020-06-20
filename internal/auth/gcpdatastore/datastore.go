@@ -7,6 +7,7 @@ import (
     "google.golang.org/api/iterator"
 
     "github.com/pkg/errors"
+    "github.com/google/uuid"
 )
 
 type Datastore struct {
@@ -38,8 +39,8 @@ func New(projectID string) (Datastore, error) {
     return d, err
 }
 
-func (d Datastore) ValidAPIKey(apiKey string) (bool, error) {
-    q := datastore.NewQuery(DatastoreKind).Filter("APIKey =", apiKey)
+func (d Datastore) ValidAPIKey(apiKey uuid.UUID) (bool, error) {
+    q := datastore.NewQuery(DatastoreKind).Filter("APIKey =", apiKey.String())
     it := d.Client.Run(d.ctx, q)
     for {
         var a Account
@@ -51,7 +52,7 @@ func (d Datastore) ValidAPIKey(apiKey string) (bool, error) {
             return false, err
         }
 
-        if a.APIKey == apiKey {
+        if a.APIKey == apiKey.String() {
             return true, nil
         }
     }

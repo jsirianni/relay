@@ -2,6 +2,7 @@ package message
 
 import (
     "time"
+    "context"
     "encoding/json"
 
     "github.com/google/uuid"
@@ -18,6 +19,8 @@ type Message struct {
     // UTC unix timestamp in nano seconds
     TimeStamp int64
     Address   string
+
+    CTX context.Context
 }
 
 func New() Message {
@@ -42,9 +45,8 @@ func (m Message) BytesSafe() ([]byte, error) {
     return newM.Bytes()
 }
 
-func (m *Message) SetAPIKey(a string) (err error) {
-    m.APIKey, err = uuid.Parse(a)
-    return err
+func (m *Message) SetAPIKey(a uuid.UUID) {
+    m.APIKey = a
 }
 
 func (m *Message) SetTime() {

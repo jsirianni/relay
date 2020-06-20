@@ -2,15 +2,22 @@ package main
 
 import (
     "os"
+    "net"
     "net/http"
+    "strings"
+    "context"
+    "io/ioutil"
 
     "github.com/jsirianni/relay/internal/queue"
-    "github.com/jsirianni/relay/internal/util/logger"
+    "github.com/jsirianni/relay/internal/logger"
     "github.com/jsirianni/relay/internal/auth"
     "github.com/jsirianni/relay/internal/auth/gcpdatastore"
-    "github.com/jsirianni/relay/internal/util/env"
+    "github.com/jsirianni/relay/internal/env"
+    "github.com/jsirianni/relay/internal/message"
 
     "github.com/gorilla/mux"
+    "github.com/google/uuid"
+    "github.com/pkg/errors"
 )
 
 type Frontend struct {
@@ -104,14 +111,14 @@ func main() {
 
 func server() error {
     r := mux.NewRouter()
-    r.HandleFunc("/message", handleMessage).Methods("POST")
-    r.HandleFunc("/status", status).Methods("GET")
+    r.HandleFunc("/message", messageHandler).Methods("POST")
+    r.HandleFunc("/status", statusHandler).Methods("GET")
     f.Log.Info("starting frontend relay server on port " + port)
     f.Log.Info("using message topic: " + f.Queue.TopicName())
     return http.ListenAndServe(":" + port, r)
 }
 
-func status(resp http.ResponseWriter, req *http.Request) {
+func statusHandler(resp http.ResponseWriter, req *http.Request) {
     if f.Log.Level() == logger.TraceLVL {
         addr, err := parseAddress(req)
         if err != nil {
@@ -123,32 +130,61 @@ func status(resp http.ResponseWriter, req *http.Request) {
     resp.WriteHeader(http.StatusOK)
 }
 
-func handleMessage(resp http.ResponseWriter, req *http.Request) {
+func messageHandler(resp http.ResponseWriter, req *http.Request) {
+    m := message.New()
+    m.SetTime()
+    m.CTX = context.Background()
+
     addr, err := parseAddress(req)
     if err != nil {
         addr = "<could not parse ip>"
     }
+    m.SetAddress(addr)
 
-    apiKey, err := parseAPIKey(req)
+    apiKey, err := uuid.Parse(req.Header.Get(apiKeyHeader))
     if err != nil {
-        f.Log.Error(err)
+        f.Log.Trace(err)
         resp.WriteHeader(http.StatusNetworkAuthenticationRequired)
         return
     }
+    m.SetAPIKey(apiKey)
 
-    validAPIKey, err := f.Auth.ValidAPIKey(apiKey)
+    valid, err := f.Auth.ValidAPIKey(apiKey)
     if err != nil {
         f.Log.Error(err)
         resp.WriteHeader(http.StatusInternalServerError)
         return
     }
-    if validAPIKey != true {
-        f.Log.Trace("invalid api key " + apiKey + " from " + addr)
+    if valid != true {
+        f.Log.Trace("invalid api key " + apiKey.String() + " from " + addr)
         resp.WriteHeader(http.StatusNetworkAuthenticationRequired)
         return
     }
 
-    payload, err := parseMessage(req)
+
+
+    p, err := ioutil.ReadAll(req.Body)
+    if err != nil {
+        f.Log.Error(err)
+        resp.WriteHeader(http.StatusInternalServerError)
+        return
+    }
+
+    if err := m.ParsePayload(p); err != nil {
+        f.Log.Error(err)
+        resp.WriteHeader(http.StatusInternalServerError)
+        return
+    }
+
+    // safely log the message without the APIKey
+    safeJson, err := m.BytesSafe()
+    if err != nil {
+        f.Log.Error(err)
+    }
+    f.Log.Info("new message: " + string(safeJson))
+
+    // return the message as json
+    payload, err := m.Bytes()
     if err != nil {
         f.Log.Error(err)
         resp.WriteHeader(http.StatusInternalServerError)
@@ -161,4 +197,17 @@ func handleMessage(resp http.ResponseWriter, req *http.Request) {
         return
     }
     resp.WriteHeader(http.StatusOK)
+}
+
+func parseAddress(req *http.Request) (string, error) {
+    raw := strings.Split(req.RemoteAddr, ":")[0]
+    if raw == "[" {
+        raw = "127.0.0.1"
+    }
+    addr := net.ParseIP(raw)
+    if addr == nil {
+        f.Log.Trace(errors.Wrap(errors.New(invalidIPError), "failed to parse address from '" + raw + "'"))
+        return "", errors.New(invalidIPError)
+    }
+    return addr.String(), nil
 }
